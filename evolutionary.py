@@ -16,7 +16,7 @@ def initialize():
     starting_population = []
 
     for i in range(POPULATION_SIZE):
-        starting_population[i] = genRandomChromosome() # just a population of random chromosomes (starting values for variables x1, x2)
+        starting_population.append(genRandomChromosome()) # just a population of random chromosomes (starting values for variables x1, x2)
 
     return starting_population
 
@@ -24,7 +24,7 @@ def initialize():
 def generateRandomPool():
     random_pool = []
     for i in range(20):
-        random_pool[i] = uniform(0, 1)
+        random_pool.append(uniform(0, 1))
 
     # return the random pool of real numbers 
     return random_pool
@@ -37,8 +37,9 @@ def getNextRandom(random_pool):
 
 # generate random values for the initial population
 def genRandomChromosome():
-    random_chromosome = bin(randint(-1024, 1023))[2:] # random integer in binary representation for variable x1
-    random_chromosome += bin(randint(-1024, 1023))[2:] # same for x2
+    # TODO: fix
+    random_chromosome = "{:011b}".format(randint(-1024, 1023)).replace("-", "1") # random integer in binary representation for variable x1
+    random_chromosome += "{:011b}".format(randint(-1024, 1023)).replace("-", "1") # random integer in binary representation for variable x1
 
     return random_chromosome
 
@@ -46,14 +47,15 @@ def genRandomChromosome():
 # calculate the input function and evaluate fitness values for a whole generation
 def evaluate(population):
     fitness = []
-    total_fitness, mean_fitness = 0
+    total_fitness = mean_fitness = 0
 
-    for i in range(POPULATION_SIZE):
+    for i in range(POPULATION_SIZE-1):
+        # TODO: make correct conversion and fix
         x1x2 = population[i] # inlcudes x1 bits with x2 bits (total 22 bits)
-        x1 = int(x1x2[11:]) # first 11 bits -> to int
-        x2 = int(x1x2[-11:]) # last 11 bits -> to int
+        x1 = int(x1x2[11:], 2) # first 11 bits -> to int
+        x2 = int(x1x2[-11:], 2) # last 11 bits -> to int
 
-        fitness[i] = x1^2 + x2
+        fitness.append(x1^2+x2) 
         total_fitness += fitness[i]
 
     mean_fitness = total_fitness / POPULATION_SIZE
@@ -67,17 +69,20 @@ def select(in_population, fitness, total_fitness, random_pool):
 
     # for every chromosome in the population, calculate their selection probabilities...
     for i in range(POPULATION_SIZE):
-        selection_probabilities[i] = fitness[i]/total_fitness
+        selection_probabilities.append(fitness[i]/total_fitness) 
+    # ...and now calculate the additive probabilities
+    additive = 0
+    for j in range(POPULATION_SIZE):
+        additive += selection_probabilities[j]
+        additive_probabilities.append(additive)
 
-        # ...and now calculate the additive probabilities
-        additive_probabilities[i] += selection_probabilities[i]
 
 
     # now initiate the selection proccess
     for i in range(POPULATION_SIZE):
         for j in range(POPULATION_SIZE):
             if (getNextRandom(random_pool) <= additive_probabilities[j]):
-                out_population[i] = in_population[j] 
+                out_population.append(in_population[j])
 
     # return the selected chromosomes
     return  out_population 
@@ -123,7 +128,7 @@ def crossover(in_population, random_pool):
 
             # only change x2 value
             if getNextRandom(random_pool) >= 0.5 :
-                pad=11 # a.k.a. begin from the 11th bit
+                pad=10 # a.k.a. begin from the 11th bit
             
 
             # get the pair to initiate the crossover on
@@ -132,7 +137,7 @@ def crossover(in_population, random_pool):
 
             temp = []
             # ..and swap the bits between the chromosomes
-            for b in range(11-crossover_point): # only include one variable e.g. xxxxxx[xxxxx]|yyyyyyyyyyy - ([crossover_bits])
+            for b in range(int(11-crossover_point-1)): # only include one variable e.g. xxxxxx[xxxxx]|yyyyyyyyyyy - ([crossover_bits])
                 chromosome1[pad+crossover_point] = temp[b]
                 chromosome1[pad+crossover_point] = chromosome2[pad+crossover_point]
                 chromosome2[pad+crossover_point] = temp[b]
@@ -159,17 +164,22 @@ def calculate_minimum():
 
 
     generation = initialize() # create a starting population
+    print(f'Starting population')
+    printPopulation(generation)
+    print('\n')
+
     random_pool = generateRandomPool() # create the random number pool
 
     # evaluate the starting population
 
     # runs for each evolution step
-    for e in range(NUM_OF_ITERATIONS):
+    for step in range(NUM_OF_ITERATIONS):
         fitness, total_fitness, mean_fitness = evaluate(generation) 
         crossover(generation, random_pool)
         mutate(generation, random_pool)
         generation = select(generation, fitness, total_fitness, random_pool)
 
+        print(f'Generation: {step}')
         printPopulation(generation)
         print('\n')
 
@@ -179,4 +189,4 @@ def calculate_minimum():
 
 
 
-calculate_minimum(F) # run simulation
+calculate_minimum() # run simulation
