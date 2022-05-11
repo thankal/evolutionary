@@ -5,10 +5,10 @@ from random import *
 
 
 POPULATION_SIZE = 6
-NUM_OF_ITERATIONS = 10000
-RANDOM_POOL_SIZE = 10
+NUM_OF_ITERATIONS = 1000
+RANDOM_POOL_SIZE = 20
 
-CROSSOVER_PROBABILITY = 0.3
+CROSSOVER_PROBABILITY = 0.1
 MUTATION_PROBABILITY = 0.1
 
 r = 0 # the random pool index (keep track of what random value to fetch next)
@@ -93,13 +93,13 @@ def select(in_population, fitness, total_fitness, random_pool):
         additive_probabilities.append(additive)
 
 
-
+    # TODO: fix maybe
     # now initiate the selection proccess
     selected = 0
     i = 0
     while (selected < POPULATION_SIZE):
         # negate probabilities so that we favor minimums
-        if (-(getNextRandom(random_pool)) <= -(selection_probabilities[i%POPULATION_SIZE])):
+        if (-(getNextRandom(random_pool)) <= -(2.5*selection_probabilities[i%POPULATION_SIZE])):
             out_population.append(in_population[i%POPULATION_SIZE]) # cycle through all candidate parents
             selected += 1
         i += 1
@@ -122,8 +122,6 @@ def mutate(in_population, random_pool):
                 modified_chromosome += bit # keep bit unchanged
 
             
-        # TODO: modifies next bit of what we said?
-
         out_population.append(modified_chromosome)
 
     # return the mutated population
@@ -243,7 +241,7 @@ def calculate_minimum():
     stats_string += '\n==========================\n'
     print(stats_string)
     stat_file.write(stats_string)
-    print(f'minimum mean value: {minimum}\n')
+    print(f'Minimum mean value: {minimum}\n')
     stat_file.write(f'minimum mean fitness: {minimum}\n')
     stat_file.close()
     return minimum
