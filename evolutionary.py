@@ -201,6 +201,7 @@ def calculate_minimum():
         generation = crossover(generation, random_pool)
         # TODO: sometimes crossover returns 8 chromosomes not 10
         # TODO: also print stats (fitness values)
+        # TODO: instead of printing on screen, write output to file
         generation = mutate(generation, random_pool)
         generation = select(generation, fitness, total_fitness, random_pool)
 
