@@ -1,8 +1,9 @@
 from audioop import add
 from math import *
+from msilib.schema import File
 from random import *
 
-POPULATION_SIZE = 10
+POPULATION_SIZE = 4
 NUM_OF_ITERATIONS = 50
 RANDOM_POOL_SIZE = 20
 
@@ -95,7 +96,6 @@ def select(in_population, fitness, total_fitness, random_pool):
     # now initiate the selection proccess
     selected = 0
     i = 0
-    # TODO: endless loop
     while (selected < POPULATION_SIZE):
         if (getNextRandom(random_pool) <= selection_probabilities[i%POPULATION_SIZE]):
             out_population.append(in_population[i%POPULATION_SIZE]) # cycle through all candidate parents
@@ -133,6 +133,10 @@ def crossover(in_population, random_pool):
 
     # get pairs..
     for i in range(1, POPULATION_SIZE, 2):
+        # get the pair to initiate the crossover on
+        chromosome1 = in_population[i-1]
+        chromosome2 = in_population[i]
+
         # ..and depending on the crossover probability..
         if (getNextRandom(random_pool) < CROSSOVER_PROBABILITY):
             # ..find the crossover point
@@ -150,9 +154,6 @@ def crossover(in_population, random_pool):
                 pad=10 # a.k.a. begin from the 11th bit
             
 
-            # get the pair to initiate the crossover on
-            chromosome1 = in_population[i-1]
-            chromosome2 = in_population[i]
 
             # used for swapping operation
             temp1 = ''
@@ -166,30 +167,34 @@ def crossover(in_population, random_pool):
             chromosome1 = chromosome1[:crossover_point] + temp2 + chromosome1[crossover_point+1+b:]
             chromosome2 = chromosome2[:crossover_point] + temp1 + chromosome2[crossover_point+1+b:]
         
-            # save the changes to the output population
-            out_population.append(chromosome1)
-            out_population.append(chromosome2)
+        # save the changes to the output population
+        out_population.append(chromosome1)
+        out_population.append(chromosome2)
 
 
     # return the modified population
     return out_population
 
 
-def printPopulation(population):
+def toStringPopulation(population):
     temp =  ''
     for c in population:
         temp += f"{c}\n"
-    print(temp)
+    return temp
 
 
 # excecutes the evolutionary algorithm
 def calculate_minimum():
     minimum = 0
+    stats_string = ''
+    stat_file = open("output.txt", 'w')
 
     generation = initialize() # create a starting population
-    print(f'Starting population')
-    printPopulation(generation)
-    print('\n')
+    stats_string += f'Starting population\n'
+    stats_string += toStringPopulation(generation)
+    stats_string += '--------------------------\n'
+    print(stats_string)
+    stat_file.write(stats_string)
 
     random_pool = generateRandomPool() # create the random number pool
 
@@ -199,16 +204,17 @@ def calculate_minimum():
     for step in range(NUM_OF_ITERATIONS):
         fitness, total_fitness, mean_fitness = evaluate(generation) 
         generation = crossover(generation, random_pool)
-        # TODO: sometimes crossover returns 8 chromosomes not 10
-        # TODO: also print stats (fitness values)
-        # TODO: instead of printing on screen, write output to file
         generation = mutate(generation, random_pool)
         generation = select(generation, fitness, total_fitness, random_pool)
 
-        print(f'Generation: {step}')
-        printPopulation(generation)
-        print('\n')
+        stats_string = f'Generation: {step}\n'
+        stats_string += toStringPopulation(generation)
+        stats_string+= f'average fitness:{mean_fitness}, total fitness:{total_fitness}'
+        stats_string += '\n--------------------------\n'
+        print(stats_string)
+        stat_file.write(stats_string)
 
+    stat_file.close()
     return minimum
 
 
