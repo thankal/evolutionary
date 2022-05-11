@@ -4,6 +4,7 @@ from random import *
 
 POPULATION_SIZE = 10
 NUM_OF_ITERATIONS = 50
+RANDOM_POOL_SIZE = 20
 
 CROSSOVER_PROBABILITY = 0.8
 MUTATION_PROBABILITY = 0.2
@@ -23,7 +24,7 @@ def initialize():
 # generate a random pool of numbers (20) in range [0, 1] for use later. 
 def generateRandomPool():
     random_pool = []
-    for i in range(20):
+    for i in range(40):
         random_pool.append(uniform(0, 1))
 
     # return the random pool of real numbers 
@@ -31,8 +32,12 @@ def generateRandomPool():
 
 def getNextRandom(random_pool):
     global r
+
+    num = random_pool[r%RANDOM_POOL_SIZE]
+    r+=1 # increment index
+
     # return the next random. If reached the end (20th random) then cycle back from the beginning
-    return random_pool[r%20] 
+    return num
 
 
 # generate random values for the initial population
@@ -49,7 +54,6 @@ def evaluate(population):
     total_fitness = mean_fitness = 0
 
     for i in range(POPULATION_SIZE):
-        # TODO: make correct conversion and fix
         x1x2 = population[i] # inlcudes x1 bits with x2 bits (total 22 bits)
         part1 = x1x2[:11] # first 11 bits -> to int
         part2 = x1x2[11:] # last 11 bits -> to int
@@ -65,7 +69,7 @@ def evaluate(population):
             x2 = int(part2, 2)
 
 
-        fitness.append(x1^2+x2) 
+        fitness.append(pow(x1, 2)+x2) 
         total_fitness += fitness[i]
 
     mean_fitness = total_fitness / POPULATION_SIZE
@@ -78,42 +82,47 @@ def select(in_population, fitness, total_fitness, random_pool):
     out_population = [] # the output of the function
 
     # for every chromosome in the population, calculate their selection probabilities...
-    for i in range(POPULATION_SIZE-1):
+    for i in range(POPULATION_SIZE):
         selection_probabilities.append(fitness[i]/total_fitness) 
     # ...and now calculate the additive probabilities
     additive = 0
-    for j in range(POPULATION_SIZE-1):
+    for j in range(POPULATION_SIZE):
         additive += selection_probabilities[j]
         additive_probabilities.append(additive)
 
 
 
     # now initiate the selection proccess
-    for i in range(POPULATION_SIZE-1):
-        for j in range(POPULATION_SIZE-1):
-            if (getNextRandom(random_pool) <= additive_probabilities[j]):
-                out_population.append(in_population[j])
+    selected = 0
+    i = 0
+    # TODO: endless loop
+    while (selected < POPULATION_SIZE):
+        if (getNextRandom(random_pool) <= selection_probabilities[i%POPULATION_SIZE]):
+            out_population.append(in_population[i%POPULATION_SIZE]) # cycle through all candidate parents
+            selected += 1
+        i += 1
 
     # return the selected chromosomes
     return  out_population 
 
 def mutate(in_population, random_pool):
     out_population = []
-    mask = "0b0000000000000000000000" # make a mask in order to change one bit of the chromosome (22 bits)
 
     # mutate one random bit from each chromosome of the population
-    for i in range(POPULATION_SIZE-1):
-        # generate a random mask
-        for b in range(22):
-            temp = str(randint(0, 1))
-            if temp == 1: 
-                mask += '0' * (22-i) # complete the bits (we only want one '1' bit)
-            mask += temp
+    for i in range(POPULATION_SIZE):
+        modified_chromosome = ''
+        # now iterate through each chromosome of the population bit by bit
+        for bit in in_population[i]:
+            # depending on the mutation probability decide if we mutate each bit
+            if (getNextRandom(random_pool) < MUTATION_PROBABILITY): 
+                modified_chromosome += str(int(bit) ^ 1) # xor with 1 -> swap bit
+            else:
+                modified_chromosome += bit # keep bit unchanged
+
             
-        # depending on the mutation probability..
-        if (getNextRandom(random_pool) < MUTATION_PROBABILITY):
-            # ..xor that mask with the chromosome so that it gets mutated 
-            out_population[i] = in_population[i] ^ mask;
+        # TODO: modifies next bit of what we said?
+
+        out_population.append(modified_chromosome)
 
     # return the mutated population
     return  out_population 
@@ -123,7 +132,7 @@ def crossover(in_population, random_pool):
     out_population = []
 
     # get pairs..
-    for i in range(1, POPULATION_SIZE-1, 2):
+    for i in range(1, POPULATION_SIZE, 2):
         # ..and depending on the crossover probability..
         if (getNextRandom(random_pool) < CROSSOVER_PROBABILITY):
             # ..find the crossover point
@@ -170,13 +179,12 @@ def printPopulation(population):
     temp =  ''
     for c in population:
         temp += f"{c}\n"
-    return temp
+    print(temp)
 
 
 # excecutes the evolutionary algorithm
 def calculate_minimum():
     minimum = 0
-
 
     generation = initialize() # create a starting population
     print(f'Starting population')
@@ -188,10 +196,12 @@ def calculate_minimum():
     # evaluate the starting population
 
     # runs for each evolution step
-    for step in range(NUM_OF_ITERATIONS-1):
+    for step in range(NUM_OF_ITERATIONS):
         fitness, total_fitness, mean_fitness = evaluate(generation) 
-        crossover(generation, random_pool)
-        mutate(generation, random_pool)
+        generation = crossover(generation, random_pool)
+        # TODO: sometimes crossover returns 8 chromosomes not 10
+        # TODO: also print stats (fitness values)
+        generation = mutate(generation, random_pool)
         generation = select(generation, fitness, total_fitness, random_pool)
 
         print(f'Generation: {step}')
