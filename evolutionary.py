@@ -1,3 +1,8 @@
+## Team:
+# 4436 Birmpilis Andreas
+# 4607 Kalyviotis Athanasios
+# 4463 Militadis Papatheodoropoulos
+
 from audioop import add
 from math import *
 from msilib.schema import File
@@ -93,7 +98,6 @@ def select(in_population, fitness, total_fitness, random_pool):
         additive_probabilities.append(additive)
 
 
-    # TODO: fix maybe
     # now initiate the selection proccess
     selected = 0
     i = 0
