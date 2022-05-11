@@ -3,10 +3,9 @@ from math import *
 from msilib.schema import File
 from random import *
 
-from numpy import Inf
 
 POPULATION_SIZE = 6
-NUM_OF_ITERATIONS = 5001
+NUM_OF_ITERATIONS = 10000
 RANDOM_POOL_SIZE = 10
 
 CROSSOVER_PROBABILITY = 0.3
@@ -100,7 +99,7 @@ def select(in_population, fitness, total_fitness, random_pool):
     i = 0
     while (selected < POPULATION_SIZE):
         # negate probabilities so that we favor minimums
-        if (-getNextRandom(random_pool) <= -selection_probabilities[i%POPULATION_SIZE]):
+        if (-(getNextRandom(random_pool)) <= -(selection_probabilities[i%POPULATION_SIZE])):
             out_population.append(in_population[i%POPULATION_SIZE]) # cycle through all candidate parents
             selected += 1
         i += 1
@@ -180,48 +179,67 @@ def crossover(in_population, random_pool):
 
 
 # format population for printing
-def toStringPopulation(population):
+def toStringPopulation(population, fitness):
     temp =  ''
-    for c in population:
-        temp += f"{c}\n"
+    for i in range(POPULATION_SIZE):
+        temp += f"{population[i]}"
+        # convert chromosome to actual x1, x2 values for visualization purposes
+        part1 = population[i][:11] # first 11 bits -> to int
+        part2 = population[i][11:] # last 11 bits -> to int
+
+        if (part1[0] == '1'):
+            x1 = int(('-' + part1[1:]), 2)
+        else:
+            x1 = int(part1, 2)
+
+        if (part2[0] == '1'):
+            x2 = int(('-' + part2[1:]), 2)
+        else:
+            x2 = int(part2, 2)
+        temp += '\t'
+        temp += f"x1={x1}, x2={x2}"
+
+        temp += f", fitness={fitness[i]}\n"
     return temp
 
 
 # excecutes the evolutionary algorithm
 def calculate_minimum():
-    minimum = Inf # keep track of the function's minimum 
+    minimum = inf # keep track of the function's minimum 
     stats_string = ''
     stat_file = open("output.txt", 'w')
 
     generation = initialize() # create a starting population
-    stats_string += f'Starting population\n'
-    stats_string += toStringPopulation(generation)
+
+    stats_string = f'-Starting population-\n'
     print(stats_string)
     stat_file.write(stats_string)
 
+
     random_pool = generateRandomPool() # create the random number pool
 
-    # evaluate the starting population
 
     # runs for each evolution step
     for step in range(NUM_OF_ITERATIONS):
         fitness, total_fitness, mean_fitness = evaluate(generation) 
 
-        stats_string = f'mean_fitness:{mean_fitness}, total_fitness:{total_fitness}'
+        stats_string = f'Generation: {step}\n'
+        stats_string += toStringPopulation(generation, fitness)
+        stats_string += f'\nmean_fitness:{mean_fitness}, total_fitness:{total_fitness}'
         stats_string += '\n--------------------------\n'
 
-        if (mean_fitness < minimum): minimum = mean_fitness
+        print(stats_string)
+        stat_file.write(stats_string)
+
+        if (mean_fitness < minimum): minimum = mean_fitness # update minimum
+
+        # follow the process to create the next generation
         generation = crossover(generation, random_pool)
         generation = mutate(generation, random_pool)
         generation = select(generation, fitness, total_fitness, random_pool)
 
-        stats_string += f'Generation: {step}\n'
-        stats_string += toStringPopulation(generation)
-        print(stats_string)
-        stat_file.write(stats_string)
 
 
-    stats_string = f'mean_fitness:{mean_fitness}, total_fitness:{total_fitness}'
     stats_string += '\n==========================\n'
     print(stats_string)
     stat_file.write(stats_string)
